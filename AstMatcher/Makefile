@@ -13,10 +13,8 @@ SRCS := $(wildcard *.cc)
 OBJS := $(SRCS:.cc=.o)
 EXES := $(SRCS:.cc=.out)
 
+.PHONY: all clean
 all: $(EXES)
-
-.cc.o:
-	$(CXX) $(CPPFLAGS) -c $< -o $@
 
 .o.out:
 	$(CXX) $< $(CLANG_LIBS) $(LDFLAGS) -o $@
