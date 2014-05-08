@@ -34,11 +34,11 @@ using namespace clang::ast_matchers;
 // GetMainExecutable (since some platforms don't support taking the
 // address of main, and some platforms can't implement GetMainExecutable
 // without being given the address of a function in the main executable).
-llvm::sys::Path GetExecutablePath(const char *Argv0) {
+std::string GetExecutablePath(const char *Argv0) {
   // This just needs to be some symbol in the binary; C++ doesn't
   // allow taking the address of ::main however.
   void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-  return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
+  return llvm::sys::fs::getMainExecutable(Argv0, MainAddr);
 }
 
 StatementMatcher LoopMatcher =
@@ -55,14 +55,14 @@ public :
 
 int main(int argc, const char **argv, char * const *envp) {
   void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-  llvm::sys::Path Path = GetExecutablePath(argv[0]);
+  std::string Path = GetExecutablePath(argv[0]);
   IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts = new DiagnosticOptions();
   TextDiagnosticPrinter *DiagClient =
     new TextDiagnosticPrinter(llvm::errs(), &*DiagOpts);
 
   IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
-  Driver TheDriver(Path.str(), llvm::sys::getProcessTriple(), "a.out", Diags);
+  Driver TheDriver(Path, llvm::sys::getProcessTriple(), "a.out", Diags);
   TheDriver.setTitle("Clang AST Matcher");
 
   // FIXME: This is a hack to try to force the driver to do something we can
@@ -82,7 +82,7 @@ int main(int argc, const char **argv, char * const *envp) {
   if (Jobs.size() != 1 || !isa<driver::Command>(*Jobs.begin())) {
     SmallString<256> Msg;
     llvm::raw_svector_ostream OS(Msg);
-    C->PrintJob(OS, C->getJobs(), "; ", true);
+    C->getJobs().Print(llvm::errs(), "\n", true);
     Diags.Report(diag::err_fe_expected_compiler_job) << OS.str();
     return 1;
   }
@@ -105,7 +105,7 @@ int main(int argc, const char **argv, char * const *envp) {
   // Show the invocation, with -v.
   if (CI->getHeaderSearchOpts().Verbose) {
     llvm::errs() << "clang invocation:\n";
-    C->PrintJob(llvm::errs(), C->getJobs(), "\n", true);
+    C->getJobs().Print(llvm::errs(), "\n", true);
     llvm::errs() << "\n";
   }
 

@@ -1,4 +1,4 @@
-LLVM_COMPONENTS := bitreader mcparser
+LLVM_COMPONENTS := bitreader mcparser transformutils option
 
 CLANG_LIBS := \
 	-lclangTooling -lclangASTMatchers \

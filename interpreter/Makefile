@@ -1,6 +1,7 @@
 LLVM_COMPONENTS := \
 	jit interpreter irreader nativecodegen codegen \
-	bitreader bitwriter ipo linker instrumentation
+	bitreader bitwriter ipo linker instrumentation \
+	option
 
 CLANG_LIBS := \
 	-lclangFrontend -lclangDriver -lclangSerialization \
