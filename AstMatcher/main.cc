@@ -18,7 +18,6 @@
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/ASTMatchers/ASTMatchFinder.h"
-#include "llvm/ADT/OwningPtr.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/ManagedStatic.h"
@@ -62,7 +61,7 @@ int main(int argc, const char **argv, char * const *envp) {
 
   IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
   DiagnosticsEngine Diags(DiagID, &*DiagOpts, DiagClient);
-  Driver TheDriver(Path, llvm::sys::getProcessTriple(), "a.out", Diags);
+  Driver TheDriver(Path, llvm::sys::getProcessTriple(), Diags);
   TheDriver.setTitle("Clang AST Matcher");
 
   // FIXME: This is a hack to try to force the driver to do something we can
@@ -70,7 +69,7 @@ int main(int argc, const char **argv, char * const *envp) {
   // (basically, exactly one input, and the operation mode is hard wired).
   SmallVector<const char *, 16> Args(argv, argv + argc);
   Args.push_back("-fsyntax-only");
-  OwningPtr<Compilation> C(TheDriver.BuildCompilation(Args));
+  std::unique_ptr<Compilation> C(TheDriver.BuildCompilation(Args));
   if (!C)
     return 0;
 
@@ -95,7 +94,7 @@ int main(int argc, const char **argv, char * const *envp) {
 
   // Initialize a compiler invocation object from the clang (-cc1) arguments.
   const driver::ArgStringList &CCArgs = Cmd->getArguments();
-  OwningPtr<CompilerInvocation> CI(new CompilerInvocation);
+  std::unique_ptr<CompilerInvocation> CI(new CompilerInvocation);
   CompilerInvocation::CreateFromArgs(*CI,
                                      const_cast<const char **>(CCArgs.data()),
                                      const_cast<const char **>(CCArgs.data()) +
@@ -113,7 +112,7 @@ int main(int argc, const char **argv, char * const *envp) {
 
   // Create a compiler instance to handle the actual work.
   CompilerInstance Clang;
-  Clang.setInvocation(CI.take());
+  Clang.setInvocation(CI.release());
 
   // Create the compilers actual diagnostics engine.
   Clang.createDiagnostics();
@@ -131,10 +130,10 @@ int main(int argc, const char **argv, char * const *envp) {
   Finder.addMatcher(LoopMatcher, &Printer);
 
   // Create and execute the frontend to generate an LLVM bitcode module.
-  OwningPtr<tooling::FrontendActionFactory> Factory(
+  std::unique_ptr<tooling::FrontendActionFactory> Factory(
             tooling::newFrontendActionFactory(&Finder));
 
-  OwningPtr<FrontendAction> Act(Factory->create());
+  std::unique_ptr<FrontendAction> Act(Factory->create());
   if (!Clang.ExecuteAction(*Act))
     return 1;
 

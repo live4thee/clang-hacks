@@ -1,15 +1,12 @@
-LLVM_COMPONENTS := \
-	jit interpreter irreader nativecodegen codegen \
-	bitreader bitwriter ipo linker instrumentation \
-	option
-
 CLANG_LIBS := \
 	-lclangFrontend -lclangDriver -lclangSerialization \
 	-lclangCodeGen -lclangParse -lclangSema -lclangEdit \
 	-lclangAnalysis -lclangAST -lclangLex -lclangBasic
 
+CPPFLAGS += -std=c++11 -ggdb
 CPPFLAGS += $(shell llvm-config --cflags)
-LDFLAGS += $(shell llvm-config --ldflags --libs $(LLVM_COMPONENTS))
+LDFLAGS += $(shell llvm-config --ldflags --libs)
+LDFLAGS += -lz -lncurses -pthread -ldl
 
 SRCS := $(wildcard *.cc)
 OBJS := $(SRCS:.cc=.o)
